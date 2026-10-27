@@ -43,9 +43,8 @@ add_subdirectory(librime/deps/marisa-trie)
 set(MARISA-TRIE_INCLUDE_PATH
         "${CMAKE_SOURCE_DIR}/librime/deps/marisa-trie/include"
 )
-
-
 set(LIBMARISA "${CMAKE_BINARY_DIR}" CACHE FILEPATH "marisa library path" FORCE)
+
 add_subdirectory(librime/deps/opencc)
 include(OpenCCInstall)
 
