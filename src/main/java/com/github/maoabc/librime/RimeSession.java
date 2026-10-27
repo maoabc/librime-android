@@ -4,9 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 
 public class RimeSession implements AutoCloseable {
 
@@ -29,35 +26,27 @@ public class RimeSession implements AutoCloseable {
         return RimeJni.processKey0(sessionId, keycode, mask);
     }
 
-    public boolean simulateKeySequence(String keySequence) {
-        return RimeJni.simulateKeySequence0(sessionId, keySequence);
-    }
 
+    @NonNull
     public String getCommitText() {
-        return RimeJni.getCommitText0(sessionId);
+        final byte[] bytes = RimeJni.getCommitText0(sessionId);
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    @NonNull
     public String getComposingText() {
-        return RimeJni.getComposingText0(sessionId);
+        final byte[] bytes = RimeJni.getComposingText0(sessionId);
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     public boolean selectCandidate(int index) {
         return RimeJni.selectCandidate0(sessionId, index);
-    }
-
-    @NonNull
-    public Iterable<RimeCandidate> getCandidates(int idx) {
-        final long ptr = RimeJni.candidateListFromIndex0(sessionId, idx);
-        if (ptr == 0) {
-            return Collections.emptyList();
-        }
-        return new Iterable<>() {
-            @NonNull
-            @Override
-            public Iterator<RimeCandidate> iterator() {
-                return new CandidateIter(RimeSession.this, ptr, idx);
-            }
-        };
     }
 
     @Nullable
@@ -97,49 +86,4 @@ public class RimeSession implements AutoCloseable {
         }
     }
 
-    private static class CandidateIter implements Iterator<RimeCandidate> {
-        //持有session对象,保证session不会提前被回收
-        private final RimeSession session;
-        private long iterPtr;
-
-        private int index;
-
-        CandidateIter(RimeSession session, long iterPtr, int index) {
-            this.session = session;
-            this.iterPtr = iterPtr;
-            this.index = index;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (session.sessionId == 0 || iterPtr == 0) {
-                return false;
-            }
-            final boolean next = RimeJni.candidateListNext0(iterPtr);
-            if (!next) {
-                RimeJni.candidateListEnd0(iterPtr);
-                iterPtr = 0;
-            }
-            return next;
-        }
-
-        @Override
-        public RimeCandidate next() {
-            if (iterPtr == 0) return null;
-            final String text = RimeJni.candidateGetText0(iterPtr);
-            final String comment = RimeJni.candidateGetComment0(iterPtr);
-            return new RimeCandidate(text, comment, index++);
-        }
-
-        //最后可能遗漏,进行收尾
-        @Override
-        protected void finalize() throws Throwable {
-            synchronized (this) {
-                if (iterPtr != 0) {
-                    RimeJni.candidateListEnd0(iterPtr);
-                    iterPtr = 0;
-                }
-            }
-        }
-    }
 }

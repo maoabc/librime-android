@@ -84,37 +84,39 @@ Java_com_github_maoabc_librime_RimeJni_processKey0(JNIEnv *env, jclass clazz, jl
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL
-Java_com_github_maoabc_librime_RimeJni_simulateKeySequence0(JNIEnv *env, jclass clazz,
-                                                            jlong session_id,
-                                                            jstring key_sequence) {
-    const char *seq = (*env)->GetStringUTFChars(env, key_sequence, NULL);
-    if (!seq) return JNI_FALSE;
-    Bool result = api->simulate_key_sequence((RimeSessionId) session_id, seq);
-    (*env)->ReleaseStringUTFChars(env, key_sequence, seq);
-    return result ? JNI_TRUE : JNI_FALSE;
-}
 
-JNIEXPORT jstring JNICALL
+JNIEXPORT jbyteArray JNICALL
 Java_com_github_maoabc_librime_RimeJni_getCommitText0(JNIEnv *env, jclass clazz, jlong session_id) {
     RIME_STRUCT(RimeCommit, commit);
     if (api->get_commit((RimeSessionId) session_id, &commit)) {
-        jstring text = (*env)->NewStringUTF(env, commit.text ? commit.text : "");
+        if (commit.text == NULL) {
+            api->free_commit(&commit);
+            return NULL;
+        }
+        size_t len = strlen(commit.text);
+
+        jbyteArray arr = (*env)->NewByteArray(env, (jsize) len);
+        (*env)->SetByteArrayRegion(env, arr, 0, (jsize) len, (const jbyte *) commit.text);
         api->free_commit(&commit);
-        return text;
+        return arr;
     }
     return NULL;
 }
 
-JNIEXPORT jstring JNICALL
+JNIEXPORT jbyteArray JNICALL
 Java_com_github_maoabc_librime_RimeJni_getComposingText0(JNIEnv *env, jclass clazz,
                                                          jlong session_id) {
     RIME_STRUCT(RimeContext, context);
     if (api->get_context((RimeSessionId) session_id, &context)) {
-        const char *preedit = (context.composition.preedit) ? context.composition.preedit : "";
-        jstring text = (*env)->NewStringUTF(env, preedit);
+        if (context.composition.preedit == NULL) {
+            api->free_context(&context);
+            return NULL;
+        }
+        size_t len = strlen(context.composition.preedit);
+        jbyteArray arr = (*env)->NewByteArray(env, (jsize) len);
+        (*env)->SetByteArrayRegion(env, arr, 0, (jsize) len, (const jbyte *) context.composition.preedit);
         api->free_context(&context);
-        return text;
+        return arr;
     }
     return NULL;
 }
@@ -126,56 +128,6 @@ Java_com_github_maoabc_librime_RimeJni_selectCandidate0(JNIEnv *env, jclass claz
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
-
-JNIEXPORT jlong JNICALL
-Java_com_github_maoabc_librime_RimeJni_candidateListFromIndex0(JNIEnv *env, jclass clazz,
-                                                               jlong session_id, jint index) {
-
-    RimeCandidateListIterator *iterator = (RimeCandidateListIterator *) calloc(1,
-                                                                               sizeof(RimeCandidateListIterator));
-    if (!iterator) return 0;
-
-    Bool result = api->candidate_list_from_index((RimeSessionId) session_id, iterator, (int) index);
-    if (result) {
-        return ptr_to_jlong(iterator);
-    } else {
-        free(iterator);
-        return 0;
-    }
-}
-
-JNIEXPORT jboolean JNICALL
-Java_com_github_maoabc_librime_RimeJni_candidateListNext0(JNIEnv *env, jclass clazz,
-                                                          jlong iterator_ptr) {
-    RimeCandidateListIterator *iterator = (RimeCandidateListIterator *) jlong_to_ptr(iterator_ptr);
-    Bool result = api->candidate_list_next(iterator);
-    return result ? JNI_TRUE : JNI_FALSE;
-}
-
-JNIEXPORT void JNICALL
-Java_com_github_maoabc_librime_RimeJni_candidateListEnd0(JNIEnv *env, jclass clazz,
-                                                         jlong iterator_ptr) {
-    RimeCandidateListIterator *iterator = (RimeCandidateListIterator *) jlong_to_ptr(iterator_ptr);
-    api->candidate_list_end(iterator);
-    free(iterator);
-}
-
-
-JNIEXPORT jstring JNICALL
-Java_com_github_maoabc_librime_RimeJni_candidateGetText0(JNIEnv *env, jclass clazz,
-                                                         jlong iterator_ptr) {
-    RimeCandidateListIterator *iterator = (RimeCandidateListIterator *) jlong_to_ptr(iterator_ptr);
-    const char *text = iterator->candidate.text ? iterator->candidate.text : "";
-    return (*env)->NewStringUTF(env, text);
-}
-
-JNIEXPORT jstring JNICALL
-Java_com_github_maoabc_librime_RimeJni_candidateGetComment0(JNIEnv *env, jclass clazz,
-                                                            jlong iterator_ptr) {
-    RimeCandidateListIterator *iterator = (RimeCandidateListIterator *) jlong_to_ptr(iterator_ptr);
-    const char *comment = iterator->candidate.comment ? iterator->candidate.comment : "";
-    return (*env)->NewStringUTF(env, comment);
-}
 
 JNIEXPORT jbyteArray JNICALL
 Java_com_github_maoabc_librime_RimeJni_candidateListSlice0(JNIEnv *env, jclass clazz,
