@@ -3,7 +3,12 @@ package com.github.maoabc.librime;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.github.maoabc.librime.cb.RimeNotification;
+
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class RimeSession implements AutoCloseable {
 
@@ -11,16 +16,11 @@ public class RimeSession implements AutoCloseable {
     private long sessionId;
 
 
-    public RimeSession() {
-        this.sessionId = RimeJni.createSession0();
-        if (this.sessionId == 0L) {
-            throw new RuntimeException("Failed to create Rime session");
-        }
+
+    RimeSession(long sessionId) {
+        this.sessionId = sessionId;
     }
 
-    public long getSessionId() {
-        return sessionId;
-    }
 
     public boolean processKey(int keycode, int mask) {
         return RimeJni.processKey0(sessionId, keycode, mask);
@@ -50,9 +50,136 @@ public class RimeSession implements AutoCloseable {
     }
 
     @Nullable
+    public RimeStatus getStatus() {
+        final byte[] bytes = RimeJni.getStatus0(sessionId);
+        if (bytes == null || bytes.length < 7) {
+            return null;
+        }
+
+        int bufIdx = 0;
+        int schemaIdLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        final String schemaId = schemaIdLen > 0 ? new String(bytes, bufIdx, schemaIdLen, StandardCharsets.UTF_8) : "";
+        bufIdx += schemaIdLen;
+
+        int schemaNameLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        final String schemaName = schemaNameLen > 0 ? new String(bytes, bufIdx, schemaNameLen, StandardCharsets.UTF_8) : "";
+        bufIdx += schemaNameLen;
+
+        boolean isDisabled = bytes[bufIdx++] != 0;
+        boolean isComposing = bytes[bufIdx++] != 0;
+        boolean isAsciiMode = bytes[bufIdx++] != 0;
+        boolean isFullShape = bytes[bufIdx++] != 0;
+        boolean isSimplified = bytes[bufIdx++] != 0;
+        boolean isTraditional = bytes[bufIdx++] != 0;
+        boolean isAsciiPunct = bytes[bufIdx++] != 0;
+
+        return new RimeStatus(schemaId, schemaName, isDisabled, isComposing, isAsciiMode, isFullShape, isSimplified, isTraditional, isAsciiPunct);
+    }
+
+    @NonNull
+    public List<RimeSchema> getSchemaList() {
+        final byte[] bytes = RimeJni.getSchemas0(sessionId);
+        if (bytes == null || bytes.length < 2) {
+            return Collections.emptyList();
+        }
+        int bufIdx = 0;
+        int count = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        final List<RimeSchema> schemas = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            if (bufIdx + 2 > bytes.length) break;
+            int idLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+            final String schemaId = idLen > 0 ? new String(bytes, bufIdx, idLen, StandardCharsets.UTF_8) : "";
+            bufIdx += idLen;
+
+            if (bufIdx + 2 > bytes.length) break;
+            int nameLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+            final String name = nameLen > 0 ? new String(bytes, bufIdx, nameLen, StandardCharsets.UTF_8) : "";
+            bufIdx += nameLen;
+
+            schemas.add(new RimeSchema(schemaId, name));
+        }
+        return schemas;
+    }
+
+    public boolean commitComposition() {
+        return RimeJni.commitComposition0(sessionId);
+    }
+
+    public void clearComposition() {
+        RimeJni.clearComposition0(sessionId);
+    }
+
+    public boolean selectCandidateOnCurrentPage(int index) {
+        return RimeJni.selectCandidateOnCurrentPage0(sessionId, index);
+    }
+
+    public boolean deleteCandidate(int index) {
+        return RimeJni.deleteCandidate0(sessionId, index);
+    }
+
+    public boolean deleteCandidateOnCurrentPage(int index) {
+        return RimeJni.deleteCandidateOnCurrentPage0(sessionId, index);
+    }
+
+    public boolean highlightCandidate(int index) {
+        return RimeJni.highlightCandidate0(sessionId, index);
+    }
+
+    public boolean highlightCandidateOnCurrentPage(int index) {
+        return RimeJni.highlightCandidateOnCurrentPage0(sessionId, index);
+    }
+
+    public boolean changePage(boolean backward) {
+        return RimeJni.changePage0(sessionId, backward);
+    }
+
+    @NonNull
+    public String getInput() {
+        final byte[] bytes = RimeJni.getInput0(sessionId);
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    public boolean setInput(@NonNull String input) {
+        final byte[] utf8Bytes = input.getBytes(StandardCharsets.UTF_8);
+        final byte[] bytes = new byte[utf8Bytes.length + 1];
+        System.arraycopy(utf8Bytes, 0, bytes, 0, utf8Bytes.length);
+        return RimeJni.setInput0(sessionId, bytes);
+    }
+
+    public void setOption(@NonNull String option, boolean value) {
+        RimeJni.setOption0(sessionId, option, value);
+    }
+
+    public boolean getOption(@NonNull String option) {
+        return RimeJni.getOption0(sessionId, option);
+    }
+
+    public void setProperty(@NonNull String prop, @Nullable String value) {
+        RimeJni.setProperty0(sessionId, prop, value);
+    }
+
+    @Nullable
+    public String getProperty(@NonNull String prop) {
+        return RimeJni.getProperty0(sessionId, prop);
+    }
+
+    @Nullable
+    public String getCurrentSchema() {
+        return RimeJni.getCurrentSchema0(sessionId);
+    }
+
+    public boolean selectSchema(@NonNull String schemaId) {
+        return RimeJni.selectSchema0(sessionId, schemaId);
+    }
+
+    @Nullable
     public RimeCandidate[] getCandidates(int idx, int count) {
         final byte[] bytes = RimeJni.candidateListSlice0(sessionId, idx, count);
         if (bytes == null) return null; //表示已经结束
+
         int rcount = (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
         final RimeCandidate[] candidates = new RimeCandidate[rcount];
 

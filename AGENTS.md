@@ -48,13 +48,9 @@ public class RimeJni {
 ```cpp
 #include <jni.h>
 
-// 全局 Rime API 指针声明
-static const RimeApi *api;
+// 全局 Rime API 
+extern const RimeApi *api;
 
-// 动态库加载时自动初始化，注入指针
-static void __attribute__((constructor)) init_rime_api(void) {
-    api = rime_get_api();
-}
 
 extern "C"
 JNIEXPORT void JNICALL

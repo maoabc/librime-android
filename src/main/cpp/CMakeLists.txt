@@ -70,6 +70,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17")
 
 set(SRC
         rime_jni.c
+        rime_callback_java.c
+        jni_init.c
         test.c
 
 )
