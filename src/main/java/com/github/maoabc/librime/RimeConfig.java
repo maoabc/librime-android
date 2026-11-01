@@ -64,9 +64,7 @@ public class RimeConfig implements AutoCloseable {
         int count = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
         final String[] keys = new String[count];
         for (int i = 0; i < count; i++) {
-            if (bufIdx + 2 > bytes.length) break;
             int len = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
-            if (bufIdx + len > bytes.length) break;
             final String name = new String(bytes, bufIdx, len, StandardCharsets.UTF_8);
             keys[i] = name;
             bufIdx += len;

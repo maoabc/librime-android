@@ -86,12 +86,10 @@ public class RimeSession implements AutoCloseable {
         int count = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
         final List<RimeSchema> schemas = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            if (bufIdx + 2 > bytes.length) break;
             int idLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
             final String schemaId = idLen > 0 ? new String(bytes, bufIdx, idLen, StandardCharsets.UTF_8) : "";
             bufIdx += idLen;
 
-            if (bufIdx + 2 > bytes.length) break;
             int nameLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
             final String name = nameLen > 0 ? new String(bytes, bufIdx, nameLen, StandardCharsets.UTF_8) : "";
             bufIdx += nameLen;

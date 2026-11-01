@@ -62,6 +62,8 @@ public class RimeJniTest {
         final String[] dateTranslators = rimeConfig.getMapKeys("date_translator");
         System.out.println("rime: " + Arrays.toString(dateTranslators));
 
+        final String[] mapKeys = rimeConfig.getMapKeys("punctuator/full_shape");
+
 
         rimeSession.close();
     }

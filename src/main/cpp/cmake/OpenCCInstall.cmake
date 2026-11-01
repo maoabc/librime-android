@@ -32,8 +32,10 @@ set(
         ${OPENCC_SRC_DIR}/TextDict.hpp
         ${OPENCC_SRC_DIR}/UTF8StringSlice.hpp
         ${OPENCC_SRC_DIR}/UTF8Util.hpp
+        ${OPENCC_SRC_DIR}/ResourceProvider.hpp
+        ${OPENCC_SRC_DIR}/ConversionInspection.hpp
         ${OPENCC_SRC_DIR}/opencc.h
-        "${OPENCC_BINARY_DIR}/src/opencc_config.h"
+        ${OPENCC_BINARY_DIR}/src/opencc_config.h
 )
 
 install(
