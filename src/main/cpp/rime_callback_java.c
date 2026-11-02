@@ -7,7 +7,6 @@
 #include <rime_api.h>
 #include <pthread.h>
 
-extern const RimeApi *api;
 extern JavaVM *javaVM;
 
 

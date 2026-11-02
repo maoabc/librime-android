@@ -26,6 +26,7 @@ option(LEVELDB_INSTALL "Install LevelDB's header and library" OFF)
 
 option(ENABLE_DARTS "Build DartsDict (ocd format)." OFF)
 
+
 include(Boost)
 
 
@@ -49,23 +50,28 @@ add_subdirectory(librime/deps/opencc)
 include(OpenCCInstall)
 
 
+
 list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_BINARY_DIR}")
 
-list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}")
+#list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}")
 
 
 add_subdirectory(librime)
 
-
-
-
 include_directories(librime/src)
+include_directories(${CMAKE_BINARY_DIR}/librime/src)
+
+
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fvisibility=hidden ")
 
+
+add_definitions(
+        -flto
+)
 add_link_options("-Wl,--pack-dyn-relocs=android")
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -march=armv8-a+crypto+crc")
 
 
 set(SRC

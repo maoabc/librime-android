@@ -24,6 +24,8 @@ public class RimeAPI {
         }
         final RimeSession rimeSession = new RimeSession(sessionId);
         rimeSession.setOption("ascii_mode", false);
+        rimeSession.setOption("ascii_punct", true);
+        rimeSession.setOption("simplified", true);
         return rimeSession;
     }
 

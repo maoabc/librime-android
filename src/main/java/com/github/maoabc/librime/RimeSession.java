@@ -16,7 +16,6 @@ public class RimeSession implements AutoCloseable {
     private long sessionId;
 
 
-
     RimeSession(long sessionId) {
         this.sessionId = sessionId;
     }
@@ -173,9 +172,17 @@ public class RimeSession implements AutoCloseable {
         return RimeJni.selectSchema0(sessionId, schemaId);
     }
 
+    /**
+     *
+     * @param idx      候选起始位置
+     * @param count    候选数量
+     * @param maxBytes 候选词text最大字节数, 加个数量控制在快速输入时,
+     *                 与count一起限制实际返回的候选数量
+     * @return 返回实际的候选词, null表示完全结束
+     */
     @Nullable
-    public RimeCandidate[] getCandidates(int idx, int count) {
-        final byte[] bytes = RimeJni.candidateListSlice0(sessionId, idx, count);
+    public RimeCandidate[] getCandidates(int idx, int count, int maxBytes) {
+        final byte[] bytes = RimeJni.candidateListSlice0(sessionId, idx, count, maxBytes);
         if (bytes == null) return null; //表示已经结束
 
         int rcount = (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
@@ -183,13 +190,19 @@ public class RimeSession implements AutoCloseable {
 
         for (int i = 0, buf_idx = 2; i < rcount; i++) {
             int textLen = (bytes[buf_idx++] & 0xFF) | ((bytes[buf_idx++] & 0xFF) << 8);
-            final String text = new String(bytes, buf_idx, textLen, StandardCharsets.UTF_8);
+            final String text = textLen > 0 ? new String(bytes, buf_idx, textLen, StandardCharsets.UTF_8) : "";
             buf_idx += textLen;
+
             int commentLen = (bytes[buf_idx++] & 0xFF) | ((bytes[buf_idx++] & 0xFF) << 8);
             final String comment = commentLen > 0 ? new String(bytes, buf_idx, commentLen, StandardCharsets.UTF_8) : "";
+            buf_idx += commentLen;
             candidates[i] = new RimeCandidate(text, comment, idx + i);
         }
         return candidates;
+    }
+
+    public RimeCandidate[] getCandidates(int idx, int count) {
+        return getCandidates(idx, count, Short.MAX_VALUE); //调高单个字符数量限制,让count限制
     }
 
     @Override

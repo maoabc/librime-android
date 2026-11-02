@@ -36,7 +36,8 @@ extern void rime_notification_handler(void *context_object,
                                       const char *message_type,
                                       const char *message_value);
 
-static RIME_MODULE_LIST(sample_modules, "default", "sample");
+//static RIME_MODULE_LIST(sample_modules, "default", "lua");
+static RIME_MODULE_LIST(sample_modules, "default", "lua");
 
 
 static void
@@ -164,7 +165,7 @@ selectCandidate0(JNIEnv *env, jclass clazz, jlong session_id,
 
 static jbyteArray
 candidateListSlice0(JNIEnv *env, jclass clazz,
-                    jlong session_id, jint idx, jint count) {
+                    jlong session_id, jint idx, jint count, jint max_char) {
     RimeCandidateListIterator iterator = {0};
 #define MAX_BUF 4*1024
 
@@ -175,6 +176,7 @@ candidateListSlice0(JNIEnv *env, jclass clazz,
     char buf[MAX_BUF];
     int buf_idx = 2;
     int rcount = 0;
+    int text_rlen = 0;
     while (rcount < count && api->candidate_list_next(&iterator)) {
         const char *text = iterator.candidate.text ? iterator.candidate.text : "";
         const char *comment = iterator.candidate.comment ? iterator.candidate.comment : "";
@@ -182,6 +184,13 @@ candidateListSlice0(JNIEnv *env, jclass clazz,
         uint16_t comment_len = (uint16_t) strlen(comment);
 
         if (buf_idx + 4 + text_len + comment_len > sizeof(buf)) {
+            // 缓存空间不足就退出, 应该很少候选能在1千字以上吧?
+            break;
+        }
+        text_rlen += text_len;
+        if (rcount > 0 && text_rlen > max_char) {
+            // 限制初次的候选总长度, 打字时让这个高速返回, 打开候选界面lazy加载时
+            // 可以把它调高就不会影响按count加载
             break;
         }
 
@@ -713,7 +722,7 @@ static JNINativeMethod methods[] = {
         {"getComposingText0",                "(J)[B",                                                                (void *) getComposingText0},
         {"selectCandidate0",                 "(JI)Z",                                                                (void *) selectCandidate0},
         {"getStatus0",                       "(J)[B",                                                                (void *) getStatus0},
-        {"candidateListSlice0",              "(JII)[B",                                                              (void *) candidateListSlice0},
+        {"candidateListSlice0",              "(JIII)[B",                                                             (void *) candidateListSlice0},
         {"getSchemas0",                      "(J)[B",                                                                (void *) getSchemas0},
         {"commitComposition0",               "(J)Z",                                                                 (void *) commitComposition0},
         {"clearComposition0",                "(J)V",                                                                 (void *) clearComposition0},

@@ -46,7 +46,7 @@ class RimeJni {
     // 批量返回一定数量的序列化之后的candidate, 头两个字节表示candidate数量,
     // 之后两个字节是candidate.text的长度然后数据, comment也是一样先2字节长度
     // 再数据
-    static native byte[] candidateListSlice0(long sessionId, int idx, int count);
+    static native byte[] candidateListSlice0(long sessionId, int idx, int count,int maxChar);
 
 
     // 返回序列化之后的RimeSchemaList结构体

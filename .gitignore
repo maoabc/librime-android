@@ -2,3 +2,4 @@
 /.cxx
 /boost-*.tar.xz
 /src/main/cpp/boost
+/src/main/cpp/thirdparty

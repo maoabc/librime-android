@@ -1,3 +1,6 @@
 [submodule "src/main/cpp/librime"]
 	path = src/main/cpp/librime
 	url = https://github.com/rime/librime.git
+[submodule "src/main/cpp/librime-lua"]
+	path = src/main/cpp/librime-lua
+	url = https://github.com/hchunhui/librime-lua.git

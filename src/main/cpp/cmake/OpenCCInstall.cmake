@@ -35,7 +35,6 @@ set(
         ${OPENCC_SRC_DIR}/ResourceProvider.hpp
         ${OPENCC_SRC_DIR}/ConversionInspection.hpp
         ${OPENCC_SRC_DIR}/opencc.h
-        ${OPENCC_BINARY_DIR}/src/opencc_config.h
 )
 
 install(
