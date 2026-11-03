@@ -16,6 +16,7 @@ option(BUILD_TESTING "" OFF)
 option(BUILD_STATIC "" ON)
 
 option(BUILD_TEST "Build and run tests" OFF)
+set(BUILD_TOOLS OFF CACHE BOOL "Build tools" FORCE)
 
 option(USE_SYSTEM_MARISA "Use system version of Marisa" ON)
 #leveldb
@@ -48,6 +49,9 @@ set(LIBMARISA "${CMAKE_BINARY_DIR}" CACHE FILEPATH "marisa library path" FORCE)
 
 add_subdirectory(librime/deps/opencc)
 include(OpenCCInstall)
+set(Opencc_INCLUDE_PATH
+        "${CMAKE_BINARY_DIR}/librime/deps/opencc/include"
+)
 
 
 
@@ -78,7 +82,6 @@ set(SRC
         rime_jni.c
         rime_callback_java.c
         jni_init.c
-        test.c
 
 )
 

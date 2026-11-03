@@ -24,8 +24,9 @@ public class RimeAPI {
         }
         final RimeSession rimeSession = new RimeSession(sessionId);
         rimeSession.setOption("ascii_mode", false);
-        rimeSession.setOption("ascii_punct", true);
-        rimeSession.setOption("simplified", true);
+        rimeSession.setOption("ascii_punct", false);
+        rimeSession.setOption("emoji", true);
+        System.out.println("rime: "+rimeSession.getStatus());
         return rimeSession;
     }
 
@@ -36,5 +37,29 @@ public class RimeAPI {
             return null;
         }
         return new RimeConfig(ptr);
+    }
+
+    public static boolean startMaintenance(boolean fullCheck) {
+        return RimeJni.startMaintenance0(fullCheck);
+    }
+
+    public static boolean isMaintenanceMode() {
+        return RimeJni.isMaintenanceMode0();
+    }
+
+    public static void joinMaintenanceThread() {
+        RimeJni.joinMaintenanceThread0();
+    }
+
+    public static boolean prebuild() {
+        return RimeJni.prebuild0();
+    }
+
+    public static boolean deploy() {
+        return RimeJni.deploy0();
+    }
+
+    public static boolean syncUserData() {
+        return RimeJni.syncUserData0();
     }
 }

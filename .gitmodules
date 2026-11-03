@@ -4,3 +4,6 @@
 [submodule "src/main/cpp/librime-lua"]
 	path = src/main/cpp/librime-lua
 	url = https://github.com/hchunhui/librime-lua.git
+[submodule "src/main/cpp/librime-predict"]
+	path = src/main/cpp/librime-predict
+	url = https://github.com/rime/librime-predict.git
