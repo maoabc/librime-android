@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.github.maoabc.librime"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24

@@ -7,14 +7,12 @@ import com.github.maoabc.librime.cb.RimeNotification;
 
 public class RimeAPI {
 
-    public static void rimeInit(@NonNull String path) {
-        RimeJni.start0(path, new RimeNotification() {
-            @Override
-            public void handler(int sessionId, @NonNull String type, @NonNull String value) {
-                System.out.println("rime: " + type + "  " + value);
-
-            }
-        });
+    public static void rimeInit(@NonNull String path, boolean fullCheck,
+                                @Nullable RimeNotification notification) {
+        RimeJni.start0(path, notification);
+        if (RimeAPI.startMaintenance(fullCheck)) { // wait deploy
+            RimeAPI.joinMaintenanceThread();
+        }
     }
 
     public static RimeSession createSession() {
@@ -22,12 +20,7 @@ public class RimeAPI {
         if (sessionId == 0L) {
             throw new RuntimeException("Failed to create Rime session");
         }
-        final RimeSession rimeSession = new RimeSession(sessionId);
-        rimeSession.setOption("ascii_mode", false);
-        rimeSession.setOption("ascii_punct", false);
-        rimeSession.setOption("emoji", true);
-        System.out.println("rime: "+rimeSession.getStatus());
-        return rimeSession;
+        return new RimeSession(sessionId);
     }
 
     @Nullable

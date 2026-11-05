@@ -46,7 +46,7 @@ start0(JNIEnv *env, jclass clazz, jstring path,
     set_rime_global_notification(env, notification);
 
     RIME_STRUCT(RimeTraits, traits);
-    traits.app_name = "simple.test";
+    traits.app_name = "myim.rime";
     traits.modules = sample_modules;
     const char *user = (*env)->GetStringUTFChars(env, path, NULL);
     traits.user_data_dir = user;
@@ -54,10 +54,6 @@ start0(JNIEnv *env, jclass clazz, jstring path,
     api->setup(&traits);
     api->set_notification_handler(rime_notification_handler, NULL);
     api->initialize(&traits);
-
-    if (api->start_maintenance(True)) {
-//        api->join_maintenance_thread();
-    }
 
 }
 
