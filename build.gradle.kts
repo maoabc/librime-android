@@ -1,8 +1,11 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     alias(libs.plugins.android.library)
 }
 
-android {
+extensions.configure<LibraryExtension> {
+    enableKotlin = false
     namespace = "com.github.maoabc.librime"
     compileSdk = 37
 
@@ -13,13 +16,12 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
-
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
