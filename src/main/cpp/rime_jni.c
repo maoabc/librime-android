@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/param.h>
 
 #ifdef _LP64
 #define jlong_to_ptr(a) ((void*)(a))
@@ -664,10 +665,12 @@ configListSize0(JNIEnv *env, jclass clazz, jlong ptr,
 static jbyteArray
 getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
                   jstring key) {
+    char tmp[4096];
     if (ptr == 0L) {
         return NULL;
     }
-    char buf[4096];
+    size_t max_cap = sizeof(tmp);
+    char *buf = tmp;
     int buf_idx = 2;
     uint16_t count = 0;
 
@@ -678,9 +681,16 @@ getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
     if (api->config_begin_map(&iterator, config, key_chars)) {
         while (api->config_next(&iterator)) {
             const char *name = iterator.key ? iterator.key : "";
-            uint16_t name_len = (uint16_t) strlen(name);
-            if (buf_idx + 2 + name_len > sizeof(buf)) {
-                break;
+            const uint16_t name_len = (uint16_t) strlen(name);
+            const size_t need = buf_idx + 2 + name_len;
+            if (need > max_cap) {
+                char *old = buf;
+                max_cap = MAX(buf_idx + sizeof(tmp), need);
+                buf = malloc(max_cap);
+                memcpy(buf, old, buf_idx);
+                if (old != tmp) {
+                    free(old);
+                }
             }
             buf[buf_idx++] = (name_len & 0xFF);
             buf[buf_idx++] = ((name_len >> 8) & 0xFF);
@@ -700,6 +710,9 @@ getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
 
     jbyteArray byteArray = (*env)->NewByteArray(env, (jsize) buf_idx);
     (*env)->SetByteArrayRegion(env, byteArray, 0, (jsize) buf_idx, (jbyte *) buf);
+    if (buf != tmp) {
+        free(buf);
+    }
     return byteArray;
 }
 
