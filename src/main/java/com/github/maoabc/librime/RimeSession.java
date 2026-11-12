@@ -3,8 +3,6 @@ package com.github.maoabc.librime;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.github.maoabc.librime.cb.RimeNotification;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;

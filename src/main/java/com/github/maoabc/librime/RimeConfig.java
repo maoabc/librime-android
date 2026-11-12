@@ -54,9 +54,19 @@ public class RimeConfig implements AutoCloseable {
     }
 
     @NonNull
-    public String[] getMapKeys(@Nullable String key) {
+    public String[] getMapKeys(@NonNull String key) {
+        return getKeys(key, true);
+    }
+
+    @NonNull
+    public String[] getListKeys(@NonNull String key) {
+        return getKeys(key, true);
+    }
+
+    @NonNull
+    private String[] getKeys(@NonNull String key, boolean map) {
         if (ptr == 0L) return new String[0];
-        final byte[] bytes = RimeJni.getConfigMapKeys0(ptr, key);
+        final byte[] bytes = RimeJni.getConfigKeys0(ptr, key, map);
         if (bytes == null || bytes.length < 2) {
             return new String[0];
         }

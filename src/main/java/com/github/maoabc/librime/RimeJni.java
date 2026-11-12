@@ -135,6 +135,6 @@ class RimeJni {
     static native int configListSize0(long ptr, String key);
 
     @FastNative
-    static native byte[] getConfigMapKeys0(long ptr, String key);
+    static native byte[] getConfigKeys0(long ptr, String key, boolean map);
 
 }

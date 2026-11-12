@@ -37,8 +37,7 @@ extern void rime_notification_handler(void *context_object,
                                       const char *message_type,
                                       const char *message_value);
 
-//static RIME_MODULE_LIST(sample_modules, "default", "lua");
-static RIME_MODULE_LIST(sample_modules, "default", "lua");
+static RIME_MODULE_LIST(sample_modules, "default", "lua", "predict");
 
 
 static void
@@ -47,7 +46,7 @@ start0(JNIEnv *env, jclass clazz, jstring path,
     set_rime_global_notification(env, notification);
 
     RIME_STRUCT(RimeTraits, traits);
-    traits.app_name = "myim.rime";
+    traits.app_name = "rime.myrime";
     traits.modules = sample_modules;
     const char *user = (*env)->GetStringUTFChars(env, path, NULL);
     traits.user_data_dir = user;
@@ -286,15 +285,21 @@ getSchemas0(JNIEnv *env, jclass clazz, jlong session_id) {
     char buf[2048];
 
     int buf_idx = 0;
-    buf[buf_idx++] = ((uint16_t) schema_list.size & 0xFF);
-    buf[buf_idx++] = (((uint16_t) schema_list.size >> 8) & 0xFF);
+    const size_t schema_size = schema_list.size;
 
-    for (size_t i = 0; i < schema_list.size && buf_idx < sizeof(buf); i++) {
+    buf[buf_idx++] = ((uint16_t) schema_size & 0xFF);
+    buf[buf_idx++] = (((uint16_t) schema_size >> 8) & 0xFF);
+
+    for (size_t i = 0; i < schema_size; i++) {
         RimeSchemaListItem *item = &schema_list.list[i];
         const char *schema_id = item->schema_id ? item->schema_id : "";
         const char *name = item->name ? item->name : "";
         uint16_t id_len = (uint16_t) strlen(schema_id);
         uint16_t name_len = (uint16_t) strlen(name);
+
+        if (buf_idx + (2 + id_len) + (2 + name_len) > sizeof(buf)) {
+            break;
+        }
 
         buf[buf_idx++] = (id_len & 0xFF);
         buf[buf_idx++] = ((id_len >> 8) & 0xFF);
@@ -663,10 +668,10 @@ configListSize0(JNIEnv *env, jclass clazz, jlong ptr,
 }
 
 static jbyteArray
-getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
-                  jstring key) {
+getConfigKeys0(JNIEnv *env, jclass clazz, jlong ptr,
+               jstring key, jboolean map) {
     char tmp[4096];
-    if (ptr == 0L) {
+    if (ptr == 0L || key == NULL) {
         return NULL;
     }
     size_t max_cap = sizeof(tmp);
@@ -674,11 +679,17 @@ getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
     int buf_idx = 2;
     uint16_t count = 0;
 
-    const char *key_chars = key ? (*env)->GetStringUTFChars(env, key, NULL) : NULL;
-    RimeConfig *config = (RimeConfig *) jlong_to_ptr(ptr);
-    RimeConfigIterator iterator = {0};
+    const char *key_chars = (*env)->GetStringUTFChars(env, key, NULL);
+    if (key_chars == NULL) {
+        return NULL;
+    }
 
-    if (api->config_begin_map(&iterator, config, key_chars)) {
+    RimeConfig *config = (RimeConfig *) jlong_to_ptr(ptr);
+
+    RimeConfigIterator iterator;
+
+    if (map ? api->config_begin_map(&iterator, config, key_chars) :
+        api->config_begin_list(&iterator, config, key_chars)) {
         while (api->config_next(&iterator)) {
             const char *name = iterator.key ? iterator.key : "";
             const uint16_t name_len = (uint16_t) strlen(name);
@@ -701,15 +712,14 @@ getConfigMapKeys0(JNIEnv *env, jclass clazz, jlong ptr,
         api->config_end(&iterator);
     }
 
-    if (key_chars != NULL) {
-        (*env)->ReleaseStringUTFChars(env, key, key_chars);
-    }
+    (*env)->ReleaseStringUTFChars(env, key, key_chars);
 
     buf[0] = (count & 0xFF);
     buf[1] = ((count >> 8) & 0xFF);
 
     jbyteArray byteArray = (*env)->NewByteArray(env, (jsize) buf_idx);
     (*env)->SetByteArrayRegion(env, byteArray, 0, (jsize) buf_idx, (jbyte *) buf);
+
     if (buf != tmp) {
         free(buf);
     }
@@ -757,7 +767,7 @@ static JNINativeMethod methods[] = {
         {"configGetString0",                 "(JLjava/lang/String;)[B",                                              (void *) configGetString0},
         {"configGetItem0",                   "(JLjava/lang/String;)J",                                               (void *) configGetItem0},
         {"configListSize0",                  "(JLjava/lang/String;)I",                                               (void *) configListSize0},
-        {"getConfigMapKeys0",                "(JLjava/lang/String;)[B",                                              (void *) getConfigMapKeys0},
+        {"getConfigKeys0",                   "(JLjava/lang/String;Z)[B",                                             (void *) getConfigKeys0},
 };
 
 int register_native_methods(JNIEnv *env) {
