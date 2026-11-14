@@ -20,7 +20,7 @@ public class RimeJniTest {
     public void testStart() throws IOException, InterruptedException {
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final File cacheDir = appContext.getCacheDir();
-        RimeJni.start0("/storage/emulated/0/rime", new RimeNotification() {
+        RimeAPI.rimeInit("/storage/emulated/0/rime", true, new RimeNotification() {
             @Override
             public void handler(int sessionId, @NonNull String type, @NonNull String value) {
                 System.out.println("rime: java " + type + "   " + value);
@@ -30,23 +30,31 @@ public class RimeJniTest {
         final RimeSession rimeSession = RimeAPI.createSession();
         rimeSession.processKey('w', 0);
         rimeSession.processKey('o', 0);
+        rimeSession.processKey(0xff53,0);
+        rimeSession.processKey(0xff53,0);
+        rimeSession.processKey(0xff53,0);
+        rimeSession.processKey(0xff54,0);
         final String commitText = rimeSession.getCommitText();
         final String composingText = rimeSession.getComposingText();
-        int i = 0;
-        while (true) {
-            final RimeCandidate[] candidates = rimeSession.getCandidates(i, 10);
-            if (candidates == null) break;
-            for (RimeCandidate candidate : candidates) {
-                System.out.println("rime:" + candidate);
-            }
-            i += candidates.length;
-        }
+        //int i = 0;
+        //while (true) {
+        //    final RimeCandidate[] candidates = rimeSession.getCandidates(i, 10);
+        //    if (candidates == null) break;
+        //    for (RimeCandidate candidate : candidates) {
+        //        System.out.println("rime:" + candidate);
+        //    }
+        //    i += candidates.length;
+        //}
 
         System.out.println(commitText);
         final RimeStatus status = rimeSession.getStatus();
         System.out.println("rime: " + status);
 
         System.out.println("rime:ss " + rimeSession.getSchemaList());
+
+        final RimeContext context = rimeSession.getContext();
+
+        System.out.println("rime: " + context);
 
 
         Assert.assertNotNull(status);

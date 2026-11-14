@@ -2,19 +2,22 @@ package com.github.maoabc.librime;
 
 import androidx.annotation.NonNull;
 
-public class RimeCandidate {
+public final class RimeCandidate {
+    @NonNull
     public final String text;
+    @NonNull
     public final String comment;
     public final int index;
 
-    RimeCandidate(String text, String comment, int index) {
+    RimeCandidate(@NonNull String text, @NonNull String comment, int index) {
         this.text = text;
         this.comment = comment;
         this.index = index;
     }
 
-    public RimeCandidate(String text) {
-        this(text, "", -1);
+    // 只用于测试
+    public static RimeCandidate forTest(@NonNull String text) {
+        return new RimeCandidate(text, "", -1);
     }
 
     @NonNull

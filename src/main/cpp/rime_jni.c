@@ -141,7 +141,7 @@ getComposingText0(JNIEnv *env, jclass clazz,
             api->free_context(&context);
             return NULL;
         }
-        size_t len = strlen(context.composition.preedit);
+        size_t len = context.composition.length;
         jbyteArray arr = (*env)->NewByteArray(env, (jsize) len);
         (*env)->SetByteArrayRegion(env, arr, 0, (jsize) len,
                                    (const jbyte *) context.composition.preedit);
@@ -149,6 +149,108 @@ getComposingText0(JNIEnv *env, jclass clazz,
         return arr;
     }
     return NULL;
+}
+
+static jbyteArray
+getContext0(JNIEnv *env, jclass clazz, jlong session_id) {
+    RIME_STRUCT(RimeContext, context);
+    if (!api->get_context((RimeSessionId) session_id, &context)) {
+        return NULL;
+    }
+
+    char buf[1024 * 6];
+    int buf_idx = 0;
+
+    // --- Composition ---
+    const char *preedit = context.composition.preedit ? context.composition.preedit : "";
+    uint16_t preedit_len = context.composition.length;
+
+    if (buf_idx + 2 + preedit_len + 6 > sizeof(buf)) {
+        api->free_context(&context);
+        return NULL;
+    }
+
+    buf[buf_idx++] = (preedit_len & 0xFF);
+    buf[buf_idx++] = ((preedit_len >> 8) & 0xFF);
+    memcpy(&buf[buf_idx], preedit, preedit_len);
+    buf_idx += preedit_len;
+
+    uint16_t cursor_pos = (uint16_t) context.composition.cursor_pos;
+    buf[buf_idx++] = (cursor_pos & 0xFF);
+    buf[buf_idx++] = ((cursor_pos >> 8) & 0xFF);
+
+    uint16_t sel_start = (uint16_t) context.composition.sel_start;
+    buf[buf_idx++] = (sel_start & 0xFF);
+    buf[buf_idx++] = ((sel_start >> 8) & 0xFF);
+
+    uint16_t sel_end = (uint16_t) context.composition.sel_end;
+    buf[buf_idx++] = (sel_end & 0xFF);
+    buf[buf_idx++] = ((sel_end >> 8) & 0xFF);
+
+    // --- Menu ---
+    const char *select_keys = context.menu.select_keys ? context.menu.select_keys : "";
+    uint16_t select_keys_len = (uint16_t) strlen(select_keys);
+
+    if (buf_idx + 9 > sizeof(buf)) {
+        api->free_context(&context);
+        return NULL;
+    }
+
+    uint16_t page_size = (uint16_t) context.menu.page_size;
+    buf[buf_idx++] = (page_size & 0xFF);
+    buf[buf_idx++] = ((page_size >> 8) & 0xFF);
+
+    uint16_t page_no = (uint16_t) context.menu.page_no;
+    buf[buf_idx++] = (page_no & 0xFF);
+    buf[buf_idx++] = ((page_no >> 8) & 0xFF);
+
+    buf[buf_idx++] = context.menu.is_last_page ? 1 : 0;
+
+    uint16_t highlighted_idx = (uint16_t) context.menu.highlighted_candidate_index;
+    buf[buf_idx++] = (highlighted_idx & 0xFF);
+    buf[buf_idx++] = ((highlighted_idx >> 8) & 0xFF);
+
+    uint16_t num_candidates = (uint16_t) context.menu.num_candidates;
+    buf[buf_idx++] = (num_candidates & 0xFF);
+    buf[buf_idx++] = ((num_candidates >> 8) & 0xFF);
+
+    for (int i = 0; i < context.menu.num_candidates; i++) {
+        RimeCandidate *cand = &context.menu.candidates[i];
+        const char *text = cand->text ? cand->text : "";
+        const char *comment = cand->comment ? cand->comment : "";
+        uint16_t text_len = (uint16_t) strlen(text);
+        uint16_t comment_len = (uint16_t) strlen(comment);
+
+        if (buf_idx + 4 + text_len + comment_len > sizeof(buf)) {
+            api->free_context(&context);
+            return NULL;
+        }
+
+        buf[buf_idx++] = (text_len & 0xFF);
+        buf[buf_idx++] = ((text_len >> 8) & 0xFF);
+        memcpy(&buf[buf_idx], text, text_len);
+        buf_idx += text_len;
+
+        buf[buf_idx++] = (comment_len & 0xFF);
+        buf[buf_idx++] = ((comment_len >> 8) & 0xFF);
+        memcpy(&buf[buf_idx], comment, comment_len);
+        buf_idx += comment_len;
+    }
+
+    if (buf_idx + 2 + select_keys_len > sizeof(buf)) {
+        api->free_context(&context);
+        return NULL;
+    }
+    buf[buf_idx++] = (select_keys_len & 0xFF);
+    buf[buf_idx++] = ((select_keys_len >> 8) & 0xFF);
+    memcpy(&buf[buf_idx], select_keys, select_keys_len);
+    buf_idx += select_keys_len;
+
+    api->free_context(&context);
+
+    jbyteArray byteArray = (*env)->NewByteArray(env, (jsize) buf_idx);
+    (*env)->SetByteArrayRegion(env, byteArray, 0, (jsize) buf_idx, (jbyte *) buf);
+    return byteArray;
 }
 
 static jboolean
@@ -739,6 +841,7 @@ static JNINativeMethod methods[] = {
         {"processKey0",                      "(JII)Z",                                                               (void *) processKey0},
         {"getCommitText0",                   "(J)[B",                                                                (void *) getCommitText0},
         {"getComposingText0",                "(J)[B",                                                                (void *) getComposingText0},
+        {"getContext0",                      "(J)[B",                                                                (void *) getContext0},
         {"selectCandidate0",                 "(JI)Z",                                                                (void *) selectCandidate0},
         {"getStatus0",                       "(J)[B",                                                                (void *) getStatus0},
         {"candidateListSlice0",              "(JIII)[B",                                                             (void *) candidateListSlice0},

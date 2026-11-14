@@ -49,6 +49,9 @@ class RimeJni {
     @FastNative
     static native byte[] getStatus0(long sessionId);
 
+    @FastNative
+    static native byte[] getContext0(long sessionId);
+
     // 批量返回一定数量的序列化之后的candidate, 头两个字节表示candidate数量,
     // 之后两个字节是candidate.text的长度然后数据, comment也是一样先2字节长度
     // 再数据

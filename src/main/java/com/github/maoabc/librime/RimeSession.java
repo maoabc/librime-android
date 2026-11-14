@@ -73,6 +73,54 @@ public class RimeSession implements AutoCloseable {
         return new RimeStatus(schemaId, schemaName, isDisabled, isComposing, isAsciiMode, isFullShape, isSimplified, isTraditional, isAsciiPunct);
     }
 
+    @Nullable
+    public RimeContext getContext() {
+        final byte[] bytes = RimeJni.getContext0(sessionId);
+        if (bytes == null || bytes.length < 17) {
+            return null;
+        }
+        int bufIdx = 0;
+
+        // --- Composition ---
+        int preeditLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        final String preedit = preeditLen > 0 ? new String(bytes, bufIdx, preeditLen, StandardCharsets.UTF_8) : "";
+        bufIdx += preeditLen;
+
+        int cursorPos = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        int selStart = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        int selEnd = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        RimeComposition composition = new RimeComposition(preedit, cursorPos, selStart, selEnd);
+
+        // --- Menu ---
+        int pageSize = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        int pageNo = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        boolean isLastPage = bytes[bufIdx++] != 0;
+        int highlightedIndex = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+
+        int numCandidates = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        RimeCandidate[] candidates = new RimeCandidate[numCandidates];
+        for (int i = 0; i < numCandidates; i++) {
+            int textLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+            final String text = textLen > 0 ? new String(bytes, bufIdx, textLen, StandardCharsets.UTF_8) : "";
+            bufIdx += textLen;
+
+            int commentLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+            final String comment = commentLen > 0 ? new String(bytes, bufIdx, commentLen, StandardCharsets.UTF_8) : "";
+            bufIdx += commentLen;
+
+            candidates[i] = new RimeCandidate(text, comment, i);
+        }
+
+        int selectKeysLen = (bytes[bufIdx++] & 0xFF) | ((bytes[bufIdx++] & 0xFF) << 8);
+        char[] selectKeys = new char[selectKeysLen];
+        for (int k = 0; k < selectKeysLen; k++) {
+            selectKeys[k] = (char) (bytes[bufIdx + k] & 0xFF);
+        }
+
+        RimeMenu menu = new RimeMenu(pageSize, pageNo, isLastPage, highlightedIndex, candidates, selectKeys);
+        return new RimeContext(composition, menu);
+    }
+
     @NonNull
     public List<RimeSchema> getSchemaList() {
         final byte[] bytes = RimeJni.getSchemas0(sessionId);
@@ -200,7 +248,7 @@ public class RimeSession implements AutoCloseable {
     }
 
     public RimeCandidate[] getCandidates(int idx, int count) {
-        return getCandidates(idx, count, Short.MAX_VALUE); //调高单个字符数量限制,让count限制
+        return getCandidates(idx, count, Short.MAX_VALUE); //调高候选字符数量限制,让count起限制作用
     }
 
     @Override
