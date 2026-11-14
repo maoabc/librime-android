@@ -49,6 +49,7 @@ class RimeJni {
     @FastNative
     static native byte[] getStatus0(long sessionId);
 
+    // 对RimeContext序列化, 底层int都使用uint16序列化
     @FastNative
     static native byte[] getContext0(long sessionId);
 
