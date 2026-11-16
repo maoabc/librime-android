@@ -60,7 +60,7 @@ public class RimeConfig implements AutoCloseable {
 
     @NonNull
     public String[] getListKeys(@NonNull String key) {
-        return getKeys(key, true);
+        return getKeys(key, false);
     }
 
     @NonNull
