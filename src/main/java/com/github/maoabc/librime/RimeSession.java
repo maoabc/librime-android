@@ -19,7 +19,7 @@ public class RimeSession implements AutoCloseable {
     }
 
 
-    public boolean processKey(int keycode, int mask) {
+    public boolean processKey(int keycode, @RimeKeyMap.RimeModifier int mask) {
         return RimeJni.processKey0(sessionId, keycode, mask);
     }
 
