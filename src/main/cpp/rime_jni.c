@@ -50,6 +50,7 @@ start0(JNIEnv *env, jclass clazz, jstring path,
     traits.modules = sample_modules;
     const char *user = (*env)->GetStringUTFChars(env, path, NULL);
     traits.user_data_dir = user;
+    (*env)->ReleaseStringUTFChars(env, path, user);
 
     api->setup(&traits);
     api->set_notification_handler(rime_notification_handler, NULL);
@@ -319,13 +320,13 @@ candidateListSlice0(JNIEnv *env, jclass clazz,
 
 static jbyteArray
 getStatus0(JNIEnv *env, jclass clazz, jlong session_id) {
-    char tmp[256];
     RIME_STRUCT(RimeStatus, status);
     Bool res = api->get_status((RimeSessionId) session_id, &status);
     if (!res) {
         return NULL;
     }
 
+    char buf[1024];
 
     const char *schema_id = status.schema_id ? status.schema_id : "";
     const char *schema_name = status.schema_name ? status.schema_name : "";
@@ -333,17 +334,11 @@ getStatus0(JNIEnv *env, jclass clazz, jlong session_id) {
     uint16_t schema_id_len = (uint16_t) strlen(schema_id);
     uint16_t schema_name_len = (uint16_t) strlen(schema_name);
 
-    char *buf;
-    int need_size = 4 + schema_id_len + schema_name_len + 7;
-    if (need_size > sizeof(tmp)) {
-        buf = malloc(need_size);
-        if (buf == NULL) {
-            api->free_status(&status);
-            return NULL;
-        }
-    } else {
-        buf = tmp;
+    if (4 + schema_id_len + schema_name_len + 7 > sizeof(buf)) {
+        api->free_status(&status);
+        return NULL;
     }
+
     int buf_idx = 0;
 
     buf[buf_idx++] = (schema_id_len & 0xFF);
@@ -368,10 +363,6 @@ getStatus0(JNIEnv *env, jclass clazz, jlong session_id) {
 
     jbyteArray byteArray = (*env)->NewByteArray(env, (jsize) buf_idx);
     (*env)->SetByteArrayRegion(env, byteArray, 0, (jsize) buf_idx, (jbyte *) buf);
-
-    if (buf != tmp) {
-        free(buf);
-    }
 
     return byteArray;
 }
