@@ -50,12 +50,12 @@ start0(JNIEnv *env, jclass clazz, jstring path,
     traits.modules = sample_modules;
     const char *user = (*env)->GetStringUTFChars(env, path, NULL);
     traits.user_data_dir = user;
-    (*env)->ReleaseStringUTFChars(env, path, user);
 
     api->setup(&traits);
     api->set_notification_handler(rime_notification_handler, NULL);
     api->initialize(&traits);
 
+    (*env)->ReleaseStringUTFChars(env, path, user);
 }
 
 
